@@ -82,4 +82,3 @@ export default function useAudioRecorder() {
     stopRecording
   };
 }
-export default useAudioRecorder;

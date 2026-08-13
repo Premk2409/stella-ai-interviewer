@@ -12,6 +12,10 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { PATHS } from '../utils/paths';
+import useAudioRecorder from '../hooks/useAudioRecorder';
+import { interviewApi } from '../services/interviewApi';
+import apiClient from '../services/apiClient';
+import useWebSocket from '../hooks/useWebSocket';
 
 const MOCK_QUESTIONS = {
   'Senior Frontend Engineer': [
@@ -51,8 +55,12 @@ export default function InterviewRoom() {
   const questions = MOCK_QUESTIONS[candidate.role] || MOCK_QUESTIONS['default'];
 
   // State Management
-  const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
-  const [isRecording, setIsRecording] = useState(false);
+  const sessionId = location.state?.sessionId || '1';
+  const { connectionStatus, latestMessage, sendMessage } = useWebSocket(sessionId);
+
+  const [currentQuestion, setCurrentQuestion] = useState("Connecting to Stella AI...");
+  const [questionTurn, setQuestionTurn] = useState(1);
+  const [lastEvaluation, setLastEvaluation] = useState(null);
   const [secondsRemaining, setSecondsRemaining] = useState(120); // 2 mins per question
   const [transcripts, setTranscripts] = useState([]);
   const [responseText, setResponseText] = useState('');
@@ -60,13 +68,115 @@ export default function InterviewRoom() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const timerRef = useRef(null);
+  const videoRef = useRef(null);
 
-  // Stella voice simulation on mount / question transition
+  // Enable live webcam feed in meeting room
   useEffect(() => {
+    let streamInstance = null;
+    const enableWebcam = async () => {
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+          streamInstance = stream;
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+          }
+        }
+      } catch (err) {
+        console.warn("Webcam access not allowed or unavailable:", err);
+      }
+    };
+
+    enableWebcam();
+
+    return () => {
+      if (streamInstance) {
+        streamInstance.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  // Initialize browser-calibrated speech recorder
+  const {
+    isRecording,
+    audioBlob,
+    text: recordedText,
+    startRecording,
+    stopRecording
+  } = useAudioRecorder();
+
+  // Handle server responses from live Llama3.1 Ollama WebSocket
+  useEffect(() => {
+    if (!latestMessage) return;
+
+    if (latestMessage.type === 'question') {
+      setCurrentQuestion(latestMessage.content);
+      setQuestionTurn(latestMessage.turn || 1);
+    } else if (latestMessage.type === 'evaluation') {
+      setLastEvaluation({
+        score: latestMessage.score,
+        feedback: latestMessage.feedback
+      });
+    } else if (latestMessage.type === 'completed') {
+      setIsSubmitting(true);
+      setTimeout(() => {
+        navigate(PATHS.REPORT, { state: { candidate, transcripts } });
+      }, 1500);
+    }
+  }, [latestMessage]);
+
+  // Watch for completed voice captures to transcribe using backend faster-whisper small model
+  useEffect(() => {
+    if (!audioBlob) return;
+
+    const performTranscription = async () => {
+      setIsSubmitting(true);
+      try {
+        const result = await interviewApi.transcribeAudio(audioBlob);
+        setResponseText(result.text);
+      } catch (err) {
+        console.error("Transcription failed via backend service:", err);
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    performTranscription();
+  }, [audioBlob]);
+
+  // Stella real voice synthesis on mount / question transition using local Piper TTS
+  useEffect(() => {
+    if (currentQuestion === "Connecting to Stella AI...") return;
+
     setIsStellaSpeaking(true);
-    const speakerTimer = setTimeout(() => {
-      setIsStellaSpeaking(false);
-    }, 4500); // speaks for 4.5 seconds
+    let isCancelled = false;
+    let audioInstance = null;
+    let speakerTimer = null;
+
+    const playQuestionAudio = async () => {
+      try {
+        const audioUrl = `${apiClient.defaults.baseURL}/interview/speak?text=${encodeURIComponent(currentQuestion)}`;
+        
+        audioInstance = new Audio(audioUrl);
+        audioInstance.onended = () => {
+          if (!isCancelled) setIsStellaSpeaking(false);
+        };
+        audioInstance.onerror = () => {
+          if (!isCancelled) {
+            console.warn("Speech synthesis play error. Using fallback timer.");
+            speakerTimer = setTimeout(() => setIsStellaSpeaking(false), 4500);
+          }
+        };
+        await audioInstance.play();
+      } catch (err) {
+        if (!isCancelled) {
+          console.warn("Speech synthesis audio blocked or failed. Using fallback timer.", err);
+          speakerTimer = setTimeout(() => setIsStellaSpeaking(false), 4500);
+        }
+      }
+    };
+
+    playQuestionAudio();
 
     // Reset and start timer
     setSecondsRemaining(120);
@@ -82,52 +192,43 @@ export default function InterviewRoom() {
     }, 1000);
 
     return () => {
-      clearTimeout(speakerTimer);
+      isCancelled = true;
+      if (audioInstance) {
+        audioInstance.pause();
+        audioInstance.onended = null;
+        audioInstance.onerror = null;
+      }
+      if (speakerTimer) {
+        clearTimeout(speakerTimer);
+      }
       clearInterval(timerRef.current);
     };
-  }, [currentQuestionIdx]);
+  }, [currentQuestion]);
 
   // Handle Response Recording Toggle
+  // Handle Response Recording Toggle via Browser MediaDevices
   const handleToggleRecording = () => {
     if (isRecording) {
-      // Stop Recording & mock transcript generation
-      setIsRecording(false);
-      const mocks = [
-        "In my previous roles, I focused heavily on bundle splitting and rendering pathways. For state management, I prefer Zustand because of its light footprint and simple subscription mechanism...",
-        "I approach components through pure presentational interfaces wrapped in containers or hooks. That keeps testing very clean and limits side effects...",
-        "Error boundaries are critical. I design high-level boundary limits to catch exceptions, then translate technical stack traces into readable messages on the screen, adhering to brand color codes."
-      ];
-      const randomText = mocks[currentQuestionIdx] || "This is a simulated speech-to-text response of the candidate's feedback speaking into the active microphone.";
-      setResponseText(randomText);
+      stopRecording();
     } else {
-      // Start Recording
-      setIsRecording(true);
       setResponseText('');
+      startRecording();
     }
   };
 
-  // Submit Answer
+  // Submit Answer over Live WebSocket
   const handleAnswerSubmit = () => {
     if (!responseText.trim()) return;
 
+    // Add to transcripts state to carry over to scorecard report
     setTranscripts(prev => [
       ...prev,
-      { question: questions[currentQuestionIdx], answer: responseText }
+      { question: currentQuestion, answer: responseText }
     ]);
-    setResponseText('');
 
-    if (currentQuestionIdx < questions.length - 1) {
-      setCurrentQuestionIdx(prev => prev + 1);
-    } else {
-      // Last question completed - go to scorecard report
-      setIsSubmitting(true);
-      setTimeout(() => {
-        navigate(PATHS.REPORT, { state: { candidate, transcripts: [
-          ...transcripts, 
-          { question: questions[currentQuestionIdx], answer: responseText }
-        ]}});
-      }, 1200);
-    }
+    // Send answer text payload over the live WebSocket to trigger Llama3.1 evaluation & transition nodes
+    sendMessage('answer', { text: responseText });
+    setResponseText('');
   };
 
   // Format Timer
@@ -162,7 +263,7 @@ export default function InterviewRoom() {
           <div className="text-right">
             <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold">Question Progress</p>
             <p className="text-md font-bold text-slate-900">
-              {currentQuestionIdx + 1} of {questions.length}
+              {questionTurn} of 5
             </p>
           </div>
         </div>
@@ -216,7 +317,7 @@ export default function InterviewRoom() {
             {/* Current Question */}
             <div className="bg-slate-850/80 border border-slate-850 p-5 rounded-2xl max-w-md">
               <p className="text-sm sm:text-base font-medium text-slate-100 leading-relaxed">
-                "{questions[currentQuestionIdx]}"
+                "{currentQuestion}"
               </p>
             </div>
           </div>
@@ -228,26 +329,29 @@ export default function InterviewRoom() {
 
         {/* Right Column: Candidate Interaction Room */}
         <div className="space-y-6">
-          {/* Webcam Simulation */}
+          {/* Real Live Webcam Feed */}
           <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm relative">
             <div className="aspect-video w-full bg-slate-950 flex items-center justify-center relative">
               <div className="absolute top-4 left-4 z-10 flex items-center gap-1.5 bg-slate-900/60 border border-slate-800/40 backdrop-blur-sm text-white px-2.5 py-1 rounded-lg text-[10px] font-bold">
-                <Video size={12} className="text-red-500" />
-                <span>Live Feed (Mock)</span>
+                <Video size={12} className="text-red-500 animate-pulse" />
+                <span>Live Camera Feed</span>
               </div>
 
-              {isRecording ? (
-                <div className="absolute inset-0 bg-blue-950/20 flex items-center justify-center text-center p-4">
-                  <div className="space-y-2">
-                    <Mic className="mx-auto text-blue-500 animate-bounce" size={28} />
-                    <p className="text-xs font-bold text-white uppercase tracking-wider">Voice Analyzer Recording</p>
-                    <p className="text-[10px] text-slate-400">Capturing local sound capture</p>
+              <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                muted 
+                className="w-full h-full object-cover transform scale-x-[-1]"
+              />
+
+              {isRecording && (
+                <div className="absolute inset-0 bg-blue-950/35 backdrop-blur-[0.5px] flex items-center justify-center text-center p-4">
+                  <div className="bg-slate-900/90 border border-slate-700/50 p-4 rounded-2xl max-w-xs space-y-2 shadow-2xl">
+                    <Mic className="mx-auto text-blue-500 animate-bounce" size={24} />
+                    <p className="text-xs font-bold text-white uppercase tracking-wider">Capturing Response...</p>
+                    <p className="text-[10px] text-slate-400">Streaming vocal feed directly to Stella AI</p>
                   </div>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <User size={36} className="mx-auto text-slate-700 animate-pulse" />
-                  <p className="text-xs font-bold text-slate-400 mt-2">Active Camera Calibrated</p>
                 </div>
               )}
             </div>

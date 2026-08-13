@@ -50,4 +50,3 @@ export default function useWebSocket(sessionId) {
     sendMessage
   };
 }
-export default useWebSocket;

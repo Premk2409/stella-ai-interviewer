@@ -57,10 +57,19 @@ export const interviewApi = {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const response = await apiClient.post('/candidate/resume/upload', formData, {
+      const response = await apiClient.post('/resume/upload?candidate_id=1', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      return response.data;
+      const data = response.data;
+      return {
+        fileName: data.file_name,
+        extractedSkills: data.extracted_skills,
+        confidenceScore: data.confidence_score > 1 ? data.confidence_score : Math.round(data.confidence_score * 100),
+        name: data.name,
+        email: data.email,
+        role: data.role,
+        experienceYears: data.experience_years
+      };
     } catch (error) {
       console.warn('REST API unavailable. Mocking resume skills extraction.');
       await delay(1200);
@@ -68,7 +77,10 @@ export const interviewApi = {
         fileName: file.name,
         extractedSkills: ['React', 'JavaScript (ES6)', 'Tailwind CSS', 'REST APIs', 'Node.js', 'WebSockets', 'Git'],
         experienceYears: 4,
-        confidenceScore: 94
+        confidenceScore: 94,
+        name: 'Sarah Jenkins',
+        email: 'sarah@example.com',
+        role: 'Senior Frontend Engineer'
       };
     }
   },
@@ -119,6 +131,24 @@ export const interviewApi = {
         { id: '1', role: 'Senior Frontend Engineer', type: 'Technical', date: '2026-08-11', duration: '30 mins', score: 92, recommendation: 'Strong Hire' },
         { id: '2', role: 'Backend Node/Java Engineer', type: 'System Design', date: '2026-08-05', duration: '45 mins', score: 78, recommendation: 'Hire' }
       ];
+    }
+  },
+
+  async transcribeAudio(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const response = await apiClient.post('/interview/transcribe', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    } catch (error) {
+      console.warn('Transcription API failed. Falling back to local mock text.');
+      const defaultTranscripts = [
+        "In modern systems, we handle token validation via Redis caches. Session endpoints are secured behind stateless gateways.",
+        "To scale technical platforms, we use eventual consistency models combined with distributed message brokers for background telemetry syncing."
+      ];
+      return { text: defaultTranscripts[Math.floor(Math.random() * defaultTranscripts.length)] };
     }
   }
 };

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { UploadCloud, FileCheck, CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
 import { interviewApi } from '../services/interviewApi';
 
-export default function ResumeUploader({ onSkillsExtracted }) {
+export default function ResumeUploader({ onSkillsExtracted, onUploadComplete }) {
   const [isUploading, setIsUploading] = useState(false);
   const [resumeData, setResumeData] = useState(null);
 
@@ -20,6 +20,9 @@ export default function ResumeUploader({ onSkillsExtracted }) {
 
     if (onSkillsExtracted) {
       onSkillsExtracted(data.extractedSkills);
+    }
+    if (onUploadComplete) {
+      onUploadComplete(data);
     }
   };
 
@@ -103,4 +106,3 @@ export default function ResumeUploader({ onSkillsExtracted }) {
     </div>
   );
 }
-export default ResumeUploader;

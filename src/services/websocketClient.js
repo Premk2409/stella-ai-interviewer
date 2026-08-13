@@ -5,7 +5,7 @@
 export class WebSocketClient {
   constructor(sessionId, options = {}) {
     this.sessionId = sessionId;
-    this.url = options.url || `ws://localhost:8080/interview/${sessionId}`;
+    this.url = options.url || `ws://localhost:8000/ws/interview/${sessionId}`;
     this.onMessageCallback = null;
     this.onStatusChangeCallback = null;
     this.socket = null;
