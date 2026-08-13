@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+/* Custom utility overrides or global definitions can be added here if needed */
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  @apply bg-slate-50 text-slate-900;
+}
