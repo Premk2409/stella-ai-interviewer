@@ -10,7 +10,8 @@ import {
   Sparkles, 
   Bell, 
   Search, 
-  User 
+  User,
+  Plus
 } from 'lucide-react';
 import { PATHS } from '../utils/paths';
 
@@ -97,9 +98,17 @@ export default function DashboardLayout({ children }) {
         `}>
           <div className="space-y-6">
             <div className="px-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3.5">
                 Recruitment Hub
               </p>
+              <Link
+                to={PATHS.SETUP}
+                onClick={() => setSidebarOpen(false)}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-blue-600/10 transition-all active:scale-[0.98]"
+              >
+                <Plus size={14} />
+                <span>New Interview</span>
+              </Link>
             </div>
             
             <nav className="space-y-1">
