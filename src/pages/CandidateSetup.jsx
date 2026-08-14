@@ -99,7 +99,10 @@ export default function CandidateSetup() {
         role: formData.role,
         experience_level: formData.experience,
         interview_type: "Technical",
-        duration: "30 mins"
+        duration: "30 mins",
+        domain: formData.domain,
+        seniority_level: formData.seniority_level,
+        projects: formData.projects
       });
       
       // Success - Go to interview room with real DB sessionId

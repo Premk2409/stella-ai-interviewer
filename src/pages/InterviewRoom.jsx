@@ -241,14 +241,26 @@ export default function InterviewRoom() {
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header Info */}
-      <div className="flex flex-wrap items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl px-6 py-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 bg-slate-900 text-blue-400 rounded-xl flex items-center justify-center font-bold border border-slate-800">
+      <div className="flex flex-wrap items-start justify-between gap-4 bg-white border border-slate-200 rounded-2xl px-6 py-4 shadow-sm">
+        <div className="flex items-start gap-4">
+          <div className="h-10 w-10 bg-slate-900 text-blue-400 rounded-xl flex items-center justify-center font-bold border border-slate-800 mt-1 shadow-inner">
             <User size={18} />
           </div>
           <div>
             <p className="text-sm font-bold text-slate-900">{candidate.name}</p>
-            <p className="text-xs text-slate-500">{candidate.role} &bull; {candidate.experience}</p>
+            <p className="text-xs text-slate-500 font-medium">{candidate.role} &bull; {candidate.experience}</p>
+            {candidate.domain && <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider mt-1 border-t border-slate-100 pt-1">Domain: {candidate.domain}</p>}
+            
+            {candidate.skills && candidate.skills.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2 max-w-md">
+                {candidate.skills.slice(0, 5).map((skill, i) => (
+                  <span key={i} className="px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 text-[9px] rounded font-bold">
+                    {skill}
+                  </span>
+                ))}
+                {candidate.skills.length > 5 && <span className="text-[9px] text-slate-400 font-bold">+{candidate.skills.length - 5} more</span>}
+              </div>
+            )}
           </div>
         </div>
 
