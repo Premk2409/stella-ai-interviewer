@@ -22,7 +22,7 @@ export default function ResumeUploader({ onSkillsExtracted, onUploadComplete }) 
       onSkillsExtracted(data.extractedSkills);
     }
     if (onUploadComplete) {
-      onUploadComplete(data);
+      onUploadComplete({ ...data, file });
     }
   };
 

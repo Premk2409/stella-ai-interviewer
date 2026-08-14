@@ -61,11 +61,12 @@ export default function InterviewRoom() {
   const [currentQuestion, setCurrentQuestion] = useState("Connecting to Stella AI...");
   const [questionTurn, setQuestionTurn] = useState(1);
   const [lastEvaluation, setLastEvaluation] = useState(null);
-  const [secondsRemaining, setSecondsRemaining] = useState(120); // 2 mins per question
+  const [secondsRemaining, setSecondsRemaining] = useState(300); // 5 mins per question
   const [transcripts, setTranscripts] = useState([]);
   const [responseText, setResponseText] = useState('');
   const [isStellaSpeaking, setIsStellaSpeaking] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isBriefed, setIsBriefed] = useState(false);
 
   const timerRef = useRef(null);
   const videoRef = useRef(null);

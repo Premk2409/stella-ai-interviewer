@@ -21,8 +21,8 @@ export default function DashboardLayout({ children }) {
 
   const navigation = [
     { name: 'Dashboard', href: PATHS.HOME, icon: Home },
-    { name: 'Candidate Setup', href: PATHS.SETUP, icon: UserCheck },
-    { name: 'Interview Room', href: PATHS.INTERVIEW, icon: Video },
+    { name: 'Create Interview', href: PATHS.CREATE, icon: Plus },
+    { name: 'Scheduled Interviews', href: PATHS.SCHEDULED, icon: Video },
     { name: 'Feedback Report', href: PATHS.REPORT, icon: FileBarChart },
   ];
 

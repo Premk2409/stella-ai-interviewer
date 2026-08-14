@@ -150,6 +150,26 @@ export const interviewApi = {
       ];
       return { text: defaultTranscripts[Math.floor(Math.random() * defaultTranscripts.length)] };
     }
+  },
+
+  /**
+   * 4. Scheduled Interviews & Context Management
+   */
+  async createScheduledInterview(formData) {
+    const response = await apiClient.post('/interview/create', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  async getScheduledInterviews() {
+    const response = await apiClient.get('/interview/scheduled');
+    return response.data;
+  },
+
+  async getInterviewContext(interviewId) {
+    const response = await apiClient.get(`/interview/${interviewId}/context`);
+    return response.data;
   }
 };
 
