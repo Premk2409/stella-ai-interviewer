@@ -431,7 +431,7 @@ export default function InterviewRoom() {
                 disabled={isSubmitting}
                 className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition cursor-pointer"
               >
-                {isSubmitting ? 'Finalizing Evaluation...' : currentQuestionIdx === questions.length - 1 ? 'Finish Interview' : 'Submit & Next Question'}
+                {isSubmitting ? 'Finalizing Evaluation...' : questionTurn === 5 ? 'Finish Interview' : 'Submit & Next Question'}
                 <ChevronRight size={14} />
               </button>
             )}

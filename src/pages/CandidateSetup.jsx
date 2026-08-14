@@ -273,9 +273,18 @@ export default function CandidateSetup() {
 
           <button
             type="submit"
-            className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-blue-600/15 transition-all active:scale-[0.98] cursor-pointer"
+            disabled={!hardware.micActive || !hardware.camActive}
+            className={`w-full inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold rounded-xl transition-all
+              ${(!hardware.micActive || !hardware.camActive)
+                ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none'
+                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/15 active:scale-[0.98] cursor-pointer'
+              }
+            `}
           >
-            Submit and Enter Interview
+            {(!hardware.micActive || !hardware.camActive) 
+              ? 'Complete System Check to Unlock Interview' 
+              : 'Submit and Enter Interview'
+            }
             <ArrowRight size={16} />
           </button>
         </form>
