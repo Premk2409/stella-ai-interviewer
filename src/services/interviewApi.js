@@ -170,6 +170,16 @@ export const interviewApi = {
   async getInterviewContext(interviewId) {
     const response = await apiClient.get(`/interview/${interviewId}/context`);
     return response.data;
+  },
+
+  async getInterviewReport(interviewId) {
+    const response = await apiClient.get(`/interview/${interviewId}/report`);
+    return response.data;
+  },
+
+  async getInterviewConversation(interviewId) {
+    const response = await apiClient.get(`/interview/${interviewId}/conversation`);
+    return response.data;
   }
 };
 

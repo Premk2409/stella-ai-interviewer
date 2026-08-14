@@ -7,6 +7,7 @@ import InterviewRoom from './pages/InterviewRoom';
 import CreateInterview from './pages/CreateInterview';
 import ScheduledInterviews from './pages/ScheduledInterviews';
 import Report from './pages/Report';
+import InterviewDetailReport from './pages/InterviewDetailReport';
 import { PATHS } from './utils/paths';
 import './App.css';
 
@@ -21,6 +22,7 @@ function App() {
           <Route path={PATHS.SETUP} element={<CandidateSetup />} />
           <Route path={PATHS.INTERVIEW} element={<InterviewRoom />} />
           <Route path={PATHS.REPORT} element={<Report />} />
+          <Route path={PATHS.DETAIL_REPORT} element={<InterviewDetailReport />} />
         </Routes>
       </DashboardLayout>
     </Router>
